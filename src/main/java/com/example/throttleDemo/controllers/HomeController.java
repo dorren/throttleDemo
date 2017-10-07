@@ -13,8 +13,6 @@ import javax.servlet.http.HttpServletRequest;
 
 @RestController
 public class HomeController {
-    private final AtomicLong counter = new AtomicLong();
-    private static final Logger LOGGER = LoggerFactory.getLogger(HomeController.class);
 
     @RequestMapping("/")
     public AppInfo index(HttpServletRequest req) {

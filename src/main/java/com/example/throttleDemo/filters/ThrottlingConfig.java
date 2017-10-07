@@ -10,8 +10,7 @@ import javax.servlet.Filter;
 
 @Configuration
 public class ThrottlingConfig {
-    public static final long MAX_REQ_LIMIT = 6;  // default per hour
-
+    public static final long MAX_REQ_LIMIT = 100;  // default per hour
 
     @Bean
     public Filter throttlingFilter() {

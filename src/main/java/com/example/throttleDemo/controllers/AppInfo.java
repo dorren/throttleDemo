@@ -4,21 +4,19 @@ public class AppInfo {
 
     private final String version;
     private final String name;
-    private final long count;
+    private final int api_count;
 
-    public AppInfo(String version, String name, long count) {
+    public AppInfo(String version, String name, int count) {
         this.version = version;
         this.name = name;
-        this.count = count;
+        this.api_count = count;
     }
 
     public String getVersion() {
         return version;
     }
 
-    public String getName() {
-        return name;
-    }
+    public String getName() { return name;}
 
-    public long getCount() { return count; }
+    public int getCount() { return api_count; }
 }

@@ -30,4 +30,8 @@ dependencies {
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 }
 
-
+bootRun {
+	if ( project.hasProperty('springDebug') ) {
+		args '--debug'
+	}
+}

@@ -4,7 +4,11 @@ package com.example.throttleDemo.filters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.StringRedisConnection;
 import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -62,20 +66,8 @@ public class ApiCounter {
      * @param key  hash key
      */
     public void cleanUp(String key) {
-        Map map = hashOps.entries(key);
-
-        LocalDateTime one_hour_ago = LocalDateTime.now().minusHours(1);
-        String key_1h = makeFieldKey(one_hour_ago);
-
-        Iterator<Map.Entry<String, String>> iterator = map.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, String> entry = iterator.next();
-            String entry_key = entry.getKey();
-
-            if(entry_key.compareTo(key_1h) < 0){
-                hashOps.delete(key, entry_key);
-            }
-        }
+        RedisCallback<Object> commands = cleanupCommands(key);
+        redisTemplate.executePipelined(commands);
     }
 
     public void increment(String hashKey) {
@@ -104,5 +96,36 @@ public class ApiCounter {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
 
         return time.format(formatter);
+    }
+
+    /**
+     * return list of delete commands wrapped in Callback object, to be called in redis pipeline
+     *
+     * @param key  counting hash key.
+     * @return
+     */
+    private RedisCallback<Object> cleanupCommands(String key) {
+        return new RedisCallback<Object>() {
+            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+                StringRedisConnection stringRedisConn = (StringRedisConnection) connection;
+
+                Map map = hashOps.entries(key);
+                LocalDateTime one_hour_ago = LocalDateTime.now().minusHours(1);
+                String key_1h = makeFieldKey(one_hour_ago);
+
+                Iterator<Map.Entry<String, String>> iterator = map.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, String> entry = iterator.next();
+                    String entry_key = entry.getKey();
+
+                    if (entry_key.compareTo(key_1h) < 0) {
+                        hashOps.delete(key, entry_key);
+                        stringRedisConn.hDel(key, entry_key);
+                    }
+                }
+
+                return null;
+            }
+        };
     }
 }
